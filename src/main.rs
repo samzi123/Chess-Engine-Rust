@@ -1,20 +1,144 @@
-use pleco::{Board,Player,PieceType,SQ};
+use pleco::{Board,Player,PieceType,SQ,BitMove};
+use std::cmp::max;
+use std::cmp::min;
 
 #[allow(dead_code)]
 fn main() {
-    //let board = Board::start_pos();
-    let board = Board::from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2").unwrap();
+    let board = Board::start_pos();
+    //let board = Board::from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2").unwrap();
 
-    draw_board(&board);
+    // draw_board(board.clone());
+    // let next_move = minimax(board.clone(), 1);
 
-    let score = evaluate(&board);
-    println!("Score: {}", score);
+    // println!("{}", next_move);
+
+    play_against_itself(board.clone(), 4);
+}
+
+fn play_against_itself(mut board: Board, depth: u8) {
+    while board.checkmate() == false && board.stalemate() == false {
+        let next_move = minimax(board.clone(), depth);
+        println!("{} for {}", next_move, board.turn());
+        board.apply_move(next_move);
+        draw_board(board.clone());
+    }
+
+    if board.checkmate(){
+        if board.turn() == Player::White {
+            println!("White wins!");
+        }
+        else {
+            println!("Black wins!");
+        }
+    }
+    else if board.stalemate() {
+        println!("Stalemate :(");
+    }
+    else {
+        println!("Game didn't end in checkmate or stalemate (this shouldn't happen)");
+    }
+}
+
+//takes in a board and returns the best move to make
+fn minimax(mut board: Board, depth: u8) -> BitMove {
+    let possible_moves = board.generate_moves();
+    let mut max_score = -999999i32;
+
+    if possible_moves.len() == 0 {
+        panic!("No possible moves from this position");
+    }
+
+    if board.turn() == Player::Black {
+        max_score = 999999;
+    }
+    let mut best_move : BitMove = possible_moves[0];
+
+    for curr_move in possible_moves {
+        //make move
+        board.apply_move(curr_move);
+
+        //evaluate
+        let mut score = minimax_helper(board.clone(), depth - 1);
+        //undo move
+        board.undo_move();
+        //println!("score: {}, player: {}, move: {}", score, board.turn(), curr_move);
+
+        if board.turn() == Player::White && score > max_score {
+            max_score = score;
+            best_move = curr_move;
+        }
+        else if board.turn() == Player::Black && score < max_score {
+            max_score = score;
+            best_move = curr_move;
+        }
+    }
+    println!("best score: {}", max_score);
+    best_move
+}
+
+fn minimax_helper(mut board: Board, depth: u8) -> i32 {
+    if board.stalemate() {
+        return 0;
+    }
+    else if board.checkmate() {
+        if board.turn() == Player::White {
+            return -1000000;
+        }
+        else {
+            return 1000000;
+        }
+    }
+
+    let eval = evaluate(&board);
+
+    if depth <= 0 {
+        return eval;
+    }
+    let possible_moves = board.generate_moves();
+    let mut best_score = -999999i32;
+
+    if board.turn() == Player::Black {
+        best_score = 999999;
+    }
+
+    for curr_move in possible_moves {
+        //make move
+        board.apply_move(curr_move);
+        let mut score = minimax_helper(board.clone(), depth - 1);
+        //undo move
+        board.undo_move();
+        //println!("score: {}, player: {}, move: {}", score, board.turn(), curr_move);
+
+        //evaluate
+        if board.turn() == Player::White {
+            best_score = max(best_score, eval);
+            best_score = max(best_score, score);
+        }
+        else{
+            best_score = min(best_score, eval);
+            best_score = min(best_score, score);
+        }
+    }
+
+    best_score
 }
 
 //takes in a board and returns its score
 fn evaluate(board: &Board) -> i32 {
+    if (*board).stalemate() {
+        return 0;
+    }
+    else if (*board).checkmate() {
+        if board.turn() == Player::White {
+            return -1000000;
+        }
+        else {
+            return 1000000;
+        }
+    }
+
     let mut score = 0i32;
-    let piece_locations = board.get_piece_locations();
+    let piece_locations = (*board).get_piece_locations();
 
     for (sq, piece) in piece_locations {
         let player = match piece.player() {
@@ -25,13 +149,20 @@ fn evaluate(board: &Board) -> i32 {
         score += get_piece_score_at_square(piece.type_of(), sq, player);
     }
 
+    if (*board).in_check() {
+        if board.turn() == Player::White {
+            score -= 400;
+        }
+        else {
+            score += 400;
+        }
+    }
+
     score
 }
 
 //gets score of a piece at a specific square
 fn get_piece_score_at_square(piece: PieceType, square: SQ, player: Player) -> i32 {
-    let mut score = 0i32;
-
     let score_grid = match piece {
         PieceType::R => ROOK_SCORE_GRID,
         PieceType::N => KNIGHT_SCORE_GRID,
@@ -55,9 +186,7 @@ fn get_piece_score_at_square(piece: PieceType, square: SQ, player: Player) -> i3
     }
 
     //calculate score by adding the piece value to the score grid value
-    score = (score_grid[index / 8][index % 8] + piece_value) * score_multiplier;
-
-    score
+    (score_grid[index / 8][index % 8] + piece_value) * score_multiplier
 }
 
 //takes in a square and returns its index in the score grid, between 0 and 63
@@ -209,15 +338,15 @@ const EMPTY_SCORE_GRID: [[i32; 8]; 8] = [[0; 8]; 8];
 
 //takes in a board, and prints the board to the console
 #[allow(dead_code)]
-fn draw_board(board_obj : &Board) {
-    let board_str = &board_obj.fen();
+fn draw_board(board_obj : Board) {
+    let board_str = board_obj.fen();
     let mut board = [['\0'; 8]; 8];
 
     let lines = board_str.split("/");
     let mut char_index = 0usize;
 
     //iterate through each line and fill the board
-    for line in lines{
+    for line in lines {
         for ch in line.chars(){
             if char_index >= 64 {
                 break;
