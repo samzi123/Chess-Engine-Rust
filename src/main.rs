@@ -12,7 +12,7 @@ fn main() {
 
     // println!("{}", next_move);
 
-    play_against_itself(board.clone(), 4);
+    play_against_itself(board.clone(), 5);
 }
 
 fn play_against_itself(mut board: Board, depth: u8) {
@@ -21,10 +21,11 @@ fn play_against_itself(mut board: Board, depth: u8) {
         println!("{} for {}", next_move, board.turn());
         board.apply_move(next_move);
         draw_board(board.clone());
+        println!();
     }
 
     if board.checkmate(){
-        if board.turn() == Player::White {
+        if board.turn() == Player::Black {
             println!("White wins!");
         }
         else {
@@ -42,41 +43,39 @@ fn play_against_itself(mut board: Board, depth: u8) {
 //takes in a board and returns the best move to make
 fn minimax(mut board: Board, depth: u8) -> BitMove {
     let possible_moves = board.generate_moves();
-    let mut max_score = -999999i32;
+    let mut alpha = -9999999;
+    let mut beta = 9999999;
 
     if possible_moves.len() == 0 {
-        panic!("No possible moves from this position");
+        panic!("No possible moves for this position");
     }
 
-    if board.turn() == Player::Black {
-        max_score = 999999;
-    }
     let mut best_move : BitMove = possible_moves[0];
+    let curr_player = board.turn();
 
     for curr_move in possible_moves {
         //make move
         board.apply_move(curr_move);
-
         //evaluate
-        let mut score = minimax_helper(board.clone(), depth - 1);
+        let score = minimax_helper(board.clone(), depth - 1, alpha, beta);
         //undo move
         board.undo_move();
         //println!("score: {}, player: {}, move: {}", score, board.turn(), curr_move);
 
-        if board.turn() == Player::White && score > max_score {
-            max_score = score;
+        if curr_player == Player::White && score > alpha {
+            alpha = score;
             best_move = curr_move;
         }
-        else if board.turn() == Player::Black && score < max_score {
-            max_score = score;
+        else if curr_player == Player::Black && score < beta {
+            beta = score;
             best_move = curr_move;
         }
     }
-    println!("best score: {}", max_score);
+    println!("alpha: {}, beta: {}", alpha, beta);
     best_move
 }
 
-fn minimax_helper(mut board: Board, depth: u8) -> i32 {
+fn minimax_helper(mut board: Board, depth: u8, mut alpha: i32, mut beta: i32) -> i32 {
     if board.stalemate() {
         return 0;
     }
@@ -89,38 +88,44 @@ fn minimax_helper(mut board: Board, depth: u8) -> i32 {
         }
     }
 
-    let eval = evaluate(&board);
-
     if depth <= 0 {
-        return eval;
+        return evaluate(&board);
     }
-    let possible_moves = board.generate_moves();
-    let mut best_score = -999999i32;
 
-    if board.turn() == Player::Black {
-        best_score = 999999;
-    }
+    let curr_player = board.turn();
+    let possible_moves = board.generate_moves();
 
     for curr_move in possible_moves {
         //make move
         board.apply_move(curr_move);
-        let mut score = minimax_helper(board.clone(), depth - 1);
+        let score = minimax_helper(board.clone(), depth - 1, alpha, beta);
         //undo move
         board.undo_move();
         //println!("score: {}, player: {}, move: {}", score, board.turn(), curr_move);
 
-        //evaluate
-        if board.turn() == Player::White {
-            best_score = max(best_score, eval);
-            best_score = max(best_score, score);
+        //alpha beta pruning
+        if curr_player == Player::White {
+            alpha = max(alpha, score);
+
+            if alpha >= beta {
+                return alpha;
+            }
         }
         else{
-            best_score = min(best_score, eval);
-            best_score = min(best_score, score);
+            beta = min(beta, score);
+
+            if alpha >= beta {
+                return beta;
+            }
         }
     }
 
-    best_score
+    if curr_player == Player::White {
+        return alpha;
+    }
+    else {
+        return beta;
+    }
 }
 
 //takes in a board and returns its score
