@@ -1,15 +1,30 @@
 [package]
-name = "rust_chess_engine"
+name = "chess_bot_lambda"
 version = "0.1.0"
 edition = "2021"
-authors = ["Samuel Henderson"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Starting in Rust 1.62 you can use `cargo add` to add dependencies 
+# to your project.
+#
+# If you're using an older Rust version,
+# download cargo-edit(https://github.com/killercup/cargo-edit#installation) 
+# to install the `add` subcommand.
+#
+# Running `cargo add DEPENDENCY_NAME` will
+# add the latest version of a dependency to the list,
+# and it will keep the alphabetic ordering for you.
 
 [dependencies]
-pleco = "0.5.0"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 dotenv = "0.15.0"
-reqwest = { version = "0.11", features = ["json"] }
-hyper = "0.14.23"
-serde_json = "1.0.97"
+openssl = { version = "0.10", features = ["vendored"] }
+
+lambda_runtime = "0.8.1"
+pkg-config = "0.3.27"
+pleco = "0.5.0"
+reqwest = "0.11.18"
+serde = "1.0.136"
+serde_json = "1.0.99"
+tokio = { version = "1", features = ["macros"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt"] }
+
