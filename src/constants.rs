@@ -1,6 +1,6 @@
 use pleco::{Board,Player,PieceType,SQ,BitMove};
 
-pub const NUM_TURNS_TO_LOOK_AHEAD: u8 = 4;
+pub const NUM_TURNS_TO_LOOK_AHEAD: u8 = 5;
 
 // scores assigned to each square for each piece type
 pub const ROOK_SCORE_GRID: [[i32; 8]; 8] = [[0,  0,  0,  0,  0,  0,  0,  0],

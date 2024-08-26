@@ -1,5 +1,6 @@
 // This file is used for testing purposes. It is not used in the lambda function.
 use pleco::{Board,Player,PieceType,SQ,BitMove};
+use crate::minimax::minimax;
 
 //takes in a board, and prints the board to the console. Used for debugging
 #[allow(dead_code)]
@@ -43,8 +44,14 @@ pub fn draw_board(board_obj : Board) {
 
 // call to make the bot play against itself. Used for testing
 pub fn play_against_itself(mut board: Board, depth: u8) {
+    let mut total_time_taken = 0;
+
     while board.checkmate() == false && board.stalemate() == false {
+        let start_time = std::time::Instant::now();
         let next_move = minimax(board.clone(), depth);
+        let time_taken_to_find_move = start_time.elapsed();
+        total_time_taken += time_taken_to_find_move.as_millis();
+
         println!("{} for {}", next_move, board.turn());
         board.apply_move(next_move);
         draw_board(board.clone());
@@ -65,4 +72,6 @@ pub fn play_against_itself(mut board: Board, depth: u8) {
     else {
         println!("Game didn't end in checkmate or stalemate (this shouldn't happen)");
     }
+
+    println!("Total time taken: {} ms", total_time_taken);
 }

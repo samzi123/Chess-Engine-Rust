@@ -1,6 +1,7 @@
 mod lichess;
 mod minimax;
 mod constants;
+mod debugging;
 
 use lichess::make_moves_in_all_ongoing_games;
 use lichess::respond_to_all_challenges;
@@ -8,6 +9,7 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
 use std::env;
 use dotenv::dotenv;
+use pleco::Board;
 
 /// This is the format the labmda function expects the request to be in.
 /// If you want to accept commands in the request, you will need to update this
@@ -37,13 +39,18 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        // disable printing the name of the module in every log line.
-        .with_target(false)
-        // disabling time is handy because CloudWatch will add the ingestion time.
-        .without_time()
-        .init();
+    // tracing_subscriber::fmt()
+    //     .with_max_level(tracing::Level::INFO)
+    //     // disable printing the name of the module in every log line.
+    //     .with_target(false)
+    //     // disabling time is handy because CloudWatch will add the ingestion time.
+    //     .without_time()
+    //     .init();
 
-    run(service_fn(function_handler)).await
+    // run(service_fn(function_handler)).await
+
+    // test bot by playing against itself
+    let board = Board::start_pos();
+    debugging::play_against_itself(board, 4);
+    Ok(())
 }

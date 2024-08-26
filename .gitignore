@@ -17,3 +17,5 @@ Cargo.lock
 
 *.py
 *.txt
+
+.DS_Store

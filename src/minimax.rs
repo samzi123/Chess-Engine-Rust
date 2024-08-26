@@ -12,7 +12,7 @@ pub fn calculate_next_move(mut board: Board) -> String {
 }
 
 // takes in a board and returns the best move to make for the current player
-fn minimax(mut board: Board, depth: u8) -> BitMove {
+pub fn minimax(mut board: Board, depth: u8) -> BitMove {
     let possible_moves = board.generate_moves();
     let mut alpha = -9999999;
     let mut beta = 9999999;
